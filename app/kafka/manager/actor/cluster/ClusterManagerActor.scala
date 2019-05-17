@@ -460,7 +460,7 @@ class ClusterManagerActor(cmConfig: ClusterManagerActorConfig)
           }
         } pipeTo sender()
 
-      case CMGeneratePartitionAssignments(topics, brokers) =>
+      case CMGeneratePartitionAssignments(topics, brokers, replicationFactor) =>
         implicit val ec = longRunningExecutionContext
         val topicCheckFutureBefore = checkTopicsUnderAssignment(topics)
 
@@ -478,7 +478,7 @@ class ClusterManagerActor(cmConfig: ClusterManagerActorConfig)
             tis.map(ti => (ti.topic, adminUtils.assignReplicasToBrokers(
               brokers,
               ti.partitions,
-              ti.replicationFactor)))
+              replicationFactor.getOrElse(ti.replicationFactor))))
           }
         }
 
@@ -622,8 +622,11 @@ class ClusterManagerActor(cmConfig: ClusterManagerActorConfig)
 
   private[this] def modify[T](fn: => T): T = {
     try {
-      mutex.acquire(cmConfig.mutexTimeoutMillis,TimeUnit.MILLISECONDS)
-      fn
+      if(mutex.acquire(cmConfig.mutexTimeoutMillis,TimeUnit.MILLISECONDS)) {
+        fn
+      } else {
+        throw new RuntimeException("Failed to acquire mutex for cluster manager command")
+      }
     } finally {
       if(mutex.isAcquiredInThisProcess) {
         mutex.release()

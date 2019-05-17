@@ -125,7 +125,7 @@ class TestKafkaManager extends CuratorAwareTest with BaseTest {
   }
 
   test("add cluster") {
-    val future = kafkaManager.addCluster("dev","2.0.0",kafkaServerZkPath, jmxEnabled = false, pollConsumers = true, filterConsumers = true, jmxUser = None, jmxPass = None, jmxSsl = false, tuning = Option(kafkaManager.defaultTuning), securityProtocol="PLAINTEXT", saslMechanism = None, jaasConfig = None)
+    val future = kafkaManager.addCluster("dev","2.2.0",kafkaServerZkPath, jmxEnabled = false, pollConsumers = true, filterConsumers = true, jmxUser = None, jmxPass = None, jmxSsl = false, tuning = Option(kafkaManager.defaultTuning), securityProtocol="PLAINTEXT", saslMechanism = None, jaasConfig = None)
     val result = Await.result(future,duration)
     assert(result.isRight === true)
     Thread.sleep(2000)
@@ -262,6 +262,22 @@ class TestKafkaManager extends CuratorAwareTest with BaseTest {
     Thread.sleep(2000)
   }
 
+  test("generate partition assignments with replication factor") {
+    val topicList = getTopicList()
+    val future = kafkaManager.generatePartitionAssignments("dev", topicList.list.toSet, Set(0), Some(1))
+    val result = Await.result(future, duration)
+    assert(result.isRight === true)
+    Thread.sleep(2000)
+  }
+
+  test("fail to generate partition assignments with replication factor larger than available brokers") {
+    val topicList = getTopicList()
+    val future = kafkaManager.generatePartitionAssignments("dev", topicList.list.toSet, Set(0), Some(2))
+    val result = Await.result(future, duration)
+    assert(result.isLeft === true)
+    Thread.sleep(2000)
+  }
+
   test("run reassign partitions") {
     val topicList = getTopicList()
     val future = kafkaManager.runReassignPartitions("dev",topicList.list.toSet)
@@ -376,7 +392,7 @@ class TestKafkaManager extends CuratorAwareTest with BaseTest {
   }
 
   test("update cluster zkhost") {
-    val future = kafkaManager.updateCluster("dev","2.0.0",testServer.getConnectString, jmxEnabled = false, pollConsumers = true, filterConsumers = true, jmxUser = None, jmxSsl = false, jmxPass = None, tuning = Option(defaultTuning), securityProtocol = "PLAINTEXT", saslMechanism = None, jaasConfig = None)
+    val future = kafkaManager.updateCluster("dev","2.2.0",testServer.getConnectString, jmxEnabled = false, pollConsumers = true, filterConsumers = true, jmxUser = None, jmxSsl = false, jmxPass = None, tuning = Option(defaultTuning), securityProtocol = "PLAINTEXT", saslMechanism = None, jaasConfig = None)
     val result = Await.result(future,duration)
     assert(result.isRight === true)
 
@@ -433,7 +449,7 @@ class TestKafkaManager extends CuratorAwareTest with BaseTest {
   }
 
   test("update cluster logkafka enabled and activeOffsetCache enabled") {
-    val future = kafkaManager.updateCluster("dev","2.0.0",testServer.getConnectString, jmxEnabled = false, pollConsumers = true, filterConsumers = true, logkafkaEnabled = true, activeOffsetCacheEnabled = true, jmxUser = None, jmxPass = None, jmxSsl = false, tuning = Option(defaultTuning), securityProtocol = "PLAINTEXT", saslMechanism = None, jaasConfig = None)
+    val future = kafkaManager.updateCluster("dev","2.2.0",testServer.getConnectString, jmxEnabled = false, pollConsumers = true, filterConsumers = true, logkafkaEnabled = true, activeOffsetCacheEnabled = true, jmxUser = None, jmxPass = None, jmxSsl = false, tuning = Option(defaultTuning), securityProtocol = "PLAINTEXT", saslMechanism = None, jaasConfig = None)
     val result = Await.result(future,duration)
     assert(result.isRight === true)
     
